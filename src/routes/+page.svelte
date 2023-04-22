@@ -35,7 +35,7 @@
         }
         else {
             const {x, y} = info.detail;
-            if (validCellPosition(x, y) && game.board[y][x] !== '')
+            if (validCellPosition(x, y) && game.board[y][x].status === 'empty')
                 tilePos = {x, y};
             else
                 tilePos = null;
@@ -43,8 +43,9 @@
     }
 
     function setTile(x: number, y: number, letter: string) {
-        if (validCellPosition(x, y) && (letter === '' || game.board[y][x] === '')) {
-            game.board[y][x] = letter;
+        if (validCellPosition(x, y) && (letter === '' || game.board[y][x].status === 'empty')) {
+            game.board[y][x].letter = letter;
+            game.board[y][x].status = letter === '' ? 'empty' : 'placed';
             return true;
         }
         return false;
@@ -72,7 +73,7 @@
     {#each gameBoard as row, i}
         <div class="row">
             {#each row as a, j (i + "-" + j)}
-                <ScrabbleCell letter={a} 
+                <ScrabbleCell cell={a} 
                         bonus={bonuses[i][j]} 
                         highlighted={tilePos != null && tilePos.x == j && tilePos.y == i}
                         position={{x: j, y: i}}
@@ -104,3 +105,15 @@
         {/each}
     </div>
 {/each}
+
+<button on:click={() => {
+    for (let i = 0; i < 15; i++) {
+        for (let j = 0; j < 15; j++) {
+            if (game.board[i][j].status === 'placed') {
+                game.board[i][j].status = 'submitted';
+            }
+        }
+    }
+}}>
+    Submit
+</button>

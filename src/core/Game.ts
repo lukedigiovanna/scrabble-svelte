@@ -1,3 +1,4 @@
+import type { Cell } from "./types";
 
 export const tileValues: {[key: string]: number;} = {
     "A": 1,
@@ -69,12 +70,12 @@ function fillScrabbleLetters(): string[] {
   return letters;
 }
 
-function generateBoard(): string[][] {
-    const table: string[][] = [];
+function generateBoard(): Cell[][] {
+    const table: Cell[][] = [];
     for (let i = 0; i < 15; i++) {
-        const row: string[] = [];
+        const row: Cell[] = [];
         for (let j = 0; j < 15; j++) {
-            row.push("");
+            row.push({letter: "", status: "empty"});
         }
         table.push(row);
     }
@@ -109,13 +110,47 @@ const NUM_TILES = 7;
 
 export default class Game {
     tileBag: string[];
-    board: string[][];
+    board: Cell[][];
     players: Player[];
+    playerTurn: number;
 
     constructor() {
         this.tileBag = fillScrabbleLetters();
         this.board = generateBoard();
         this.players = [];
+        this.playerTurn = 0;
+    }
+    
+    submitWord(): boolean {
+        // Need to validate the list of things
+        // 1. In a line (vertical or horizontal)
+        // 2. Validate all tiles are connected.
+        // 3. Validate letter in the middle
+        // 4. Validate all words are in the dictionary
+        
+        // first collect all the tiles that were placed and then validate the rules on them
+        const placedTiles: any[] = [];
+        for (let i = 0; i < this.board.length; i++) {
+            for (let j = 0; j < this.board[i].length; j++) {
+                if (this.board[i][j].status === "placed") {
+                    placedTiles.push({...this.board[i][j], row: i, col: j});
+                }
+            }
+        }
+        // now validate the rules
+        // 1. In a line (vertical or horizontal)
+        // we can guarantee that the tiles are sorted from left to right and top to bottom
+        // first check if it is horizontal
+        let isHorizontal = true;
+        // let word = "";
+        for (let i = 0; i < placedTiles.length - 1; i++) {
+            if (placedTiles[i].row !== placedTiles[i + 1].row || placedTiles[i].col !== placedTiles[i + 1].col - 1) {
+                isHorizontal = false;
+                break;
+            }
+        }
+        
+        return false;
     }
 
     // draws a random tile from the bag and removes it from the bag

@@ -10,6 +10,7 @@
 	const dispatch = createEventDispatcher();
 
     $: cursor = isMovableTile ? "grab" : "default";
+    $: backgroundColor = isMovableTile ? "cyan" : "white";
 
     let isGrabbing = false;
     let mousePos = {x: 0, y: 0};
@@ -69,7 +70,8 @@
 <div class="tile center" style="
     cursor: {cursor}; 
     transform: translate({translation.x}px, {translation.y}px);
-    width: { TILE_SIZE }px; height: { TILE_SIZE }px;" 
+    width: { TILE_SIZE }px; height: { TILE_SIZE }px;
+    background-color: {backgroundColor};" 
         on:mousedown={handleMouseDown}>
     <p class="letter">
         {letter}
@@ -95,6 +97,7 @@
         justify-content: center;
         font-family: Arial, Helvetica, sans-serif;
         user-select: none;
+        z-index: 1;
     }
     .tile-value {
         position: absolute;

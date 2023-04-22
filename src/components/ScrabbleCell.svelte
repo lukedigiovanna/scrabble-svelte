@@ -1,8 +1,9 @@
 <script lang="ts">
     import ScrabbleTile from "./ScrabbleTile.svelte";
     import { CELL_SIZE } from "../core/constants";
+    import type { Cell } from "../core/types";
 
-    export let letter: string;
+    export let cell: Cell;
     export let bonus: string;
     export let highlighted: boolean = false;
     export let position: {x: number, y: number};
@@ -32,8 +33,9 @@
     height: {CELL_SIZE - 2}px;
     border-color: {highlighted ? "#444" : "black"};
     opacity: {highlighted ? "0.6" : "1.0"}">
-    {#if letter.length > 0}
-        <ScrabbleTile letter={letter} isMovableTile={true}
+    {#if cell.status !== 'empty'}
+        <ScrabbleTile letter={cell.letter} 
+            isMovableTile={cell.status === 'placed'}
             on:move_tile={moveTile}
             on:set_tile={(info) => {
                 setTile(position.x, position.y, "");
