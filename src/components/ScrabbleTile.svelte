@@ -1,22 +1,28 @@
 <script lang="ts">
-    import Game, { tileValues } from "../core/Game";
-    import { CELL_SIZE } from "../core/constants";
+    import { tileValues } from "../core/Game";
+    import { CELL_SIZE, TILE_SIZE } from "../core/constants";
     export let letter: string;
-    export let isBoardTile: boolean;
+    export let isMovableTile: boolean;
     export let tableInfo: {x: number, y: number} = {x: 0, y: 0};
 
     import { createEventDispatcher } from 'svelte';
 
 	const dispatch = createEventDispatcher();
 
-    $: cursor = isBoardTile ? "default" : "grab";
+    $: cursor = isMovableTile ? "grab" : "default";
 
     let isGrabbing = false;
     let mousePos = {x: 0, y: 0};
     let translation = {x: 0, y: 0};
 
+    function calculateBoardPos() {
+        const offset = { x: mousePos.x - tableInfo.x, y: mousePos.y - tableInfo.y };
+        const boardPos = { x: Math.floor(offset.x / CELL_SIZE), y: Math.floor(offset.y / CELL_SIZE)};
+        return boardPos;
+    }
+
     function handleMouseDown(event: any) {
-        if (!isBoardTile) {
+        if (isMovableTile) {
             // then we do whatever to whatever.
             cursor = "grabbing";
             isGrabbing = true;
@@ -36,25 +42,22 @@
             mousePos = {x: event.clientX, y: event.clientY};
             translation.x += deltaX;
             translation.y += deltaY;
+
+            dispatch("move_tile", calculateBoardPos());
         }
     }
 
     function handleMouseRelease(event: any) {
-        if (!isBoardTile) {
+        if (isMovableTile) {
             // then we do whatever to whatever.
             cursor = "grab";
 
             translation = {x: 0, y: 0};
 
             mousePos = { x: event.clientX, y: event.clientY };
-            const offset = { x: mousePos.x - tableInfo.x, y: mousePos.y - tableInfo.y };
-            const boardPos = { x: Math.floor(offset.x / CELL_SIZE), y: Math.floor(offset.y / CELL_SIZE)};
-
-            dispatch('update_board', {...boardPos, letter});
-
-            // game.board[boardPos.y][boardPos.x] = letter;
-            // console.log(boardPos, letter);
-            // console.log(game.board);
+            
+            dispatch('set_tile', {...calculateBoardPos(), letter});
+            dispatch('move_tile', null);
 
             isGrabbing = false;
             document.removeEventListener("mouseup", handleMouseRelease);
@@ -66,7 +69,7 @@
 <div class="tile center" style="
     cursor: {cursor}; 
     transform: translate({translation.x}px, {translation.y}px);
-    width: { CELL_SIZE * 0.85 }px; height: { CELL_SIZE * 0.85 }px;" 
+    width: { TILE_SIZE }px; height: { TILE_SIZE }px;" 
         on:mousedown={handleMouseDown}>
     <p class="letter">
         {letter}

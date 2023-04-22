@@ -1,0 +1,1 @@
+export type SetTileEvent = CustomEvent<{x: number, y: number, letter: string}>;

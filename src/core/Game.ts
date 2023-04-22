@@ -82,7 +82,7 @@ function generateBoard(): string[][] {
 }
 
 export interface Player {
-    tiles: string[];
+    tiles: (string|null)[];
     score: number;
 }
 
@@ -122,7 +122,7 @@ export default class Game {
     drawTile(): string {
         const idx = Math.floor(Math.random() * this.tileBag.length);
         const tile = this.tileBag[idx];
-        this.board.splice(idx, 1);
+        this.tileBag.splice(idx, 1);
         return tile;
     }
 

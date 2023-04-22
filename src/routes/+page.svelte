@@ -3,8 +3,9 @@
     import ScrabbleTile from "../components/ScrabbleTile.svelte";
     import Game from "../core/Game";
     import { bonuses } from '../core/Game';
+    import { TILE_SIZE } from "../core/constants";
 
-    const game = new Game();
+    let game = new Game();
 
     game.addPlayer();
     game.addPlayer();
@@ -19,11 +20,34 @@
         return {x: 0, y: 0};
     }
 
+    $: gameBoard = (() => {return game.board})();
     $: tableInfo = getTableInfo();
 
-    function setTile(info: CustomEvent<{x: number, y: number, letter: string}>) {
-        game.board[info.detail.y][info.detail.x] = info.detail.letter;
-        
+    let tilePos: {x: number, y: number} | null;
+
+    function validCellPosition(x: number, y: number) {
+        return x >= 0 && x < 15 && y >= 0 && y < 15;
+    }
+
+    function moveTile(info: CustomEvent<{x: number, y: number} | null>) {
+        if (info.detail === null) {
+            tilePos = null;
+        }
+        else {
+            const {x, y} = info.detail;
+            if (validCellPosition(x, y) && game.board[y][x] !== '')
+                tilePos = {x, y};
+            else
+                tilePos = null;
+        }
+    }
+
+    function setTile(x: number, y: number, letter: string) {
+        if (validCellPosition(x, y) && (letter === '' || game.board[y][x] === '')) {
+            game.board[y][x] = letter;
+            return true;
+        }
+        return false;
     }
 </script>
 
@@ -45,17 +69,38 @@
 </style>
 
 <div bind:this={boardElement}>
-    {#each game.board as row, i}
+    {#each gameBoard as row, i}
         <div class="row">
-            {#each row as a, j}
-                <ScrabbleCell letter={a} bonus={bonuses[i][j]} />
+            {#each row as a, j (i + "-" + j)}
+                <ScrabbleCell letter={a} 
+                        bonus={bonuses[i][j]} 
+                        highlighted={tilePos != null && tilePos.x == j && tilePos.y == i}
+                        position={{x: j, y: i}}
+                        setTile={setTile}
+                        moveTile={moveTile} />
             {/each}
         </div> 
     {/each}
 </div>
 
-<div class="tiles row">
-    {#each game.players[0].tiles as tile}
-        <ScrabbleTile tableInfo={tableInfo} letter={tile} isBoardTile={false} on:update_board={setTile}/>
-    {/each}
-</div>
+{#each game.players as player}
+    <div class="tiles row">
+        {#each player.tiles as letter, i}
+            {#if letter !== null}
+                <ScrabbleTile tableInfo={tableInfo} letter={letter} isMovableTile={true} 
+                    on:set_tile={(info) => { // info is a SetTileEvent
+                        if (setTile(info.detail.x, info.detail.y, info.detail.letter)) {
+                            // then remove this tile from the player's tiles
+                            player.tiles[i] = null;
+                        }
+                    }}
+                    on:move_tile={moveTile}/>
+            {:else}
+                <div style="
+                    width: { TILE_SIZE }px;
+                    height: { TILE_SIZE }px;
+                "></div>
+            {/if}
+        {/each}
+    </div>
+{/each}
