@@ -1,3 +1,4 @@
+import { hasWord } from "./dictionary";
 import type { Cell } from "./types";
 
 export const tileValues: {[key: string]: number;} = {
@@ -127,7 +128,7 @@ export default class Game {
         // 2. Validate all tiles are connected.
         // 3. Validate letter in the middle
         // 4. Validate all words are in the dictionary
-        
+
         // first collect all the tiles that were placed and then validate the rules on them
         const placedTiles: any[] = [];
         for (let i = 0; i < this.board.length; i++) {
@@ -137,20 +138,177 @@ export default class Game {
                 }
             }
         }
+
+        // first check there is a tile in the center
+        let hasCenter = true;
+        let makesCenter = false;
+        if (this.board[7][7].status !== 'submitted') {
+            hasCenter = false;
+            // then make sure one of the tiles is on the center
+            for (let i = 0; i < placedTiles.length; i++) {
+                if (placedTiles[i].row === 7 && placedTiles[i].col === 7) {
+                    hasCenter = true;
+                    makesCenter = true;
+                    break;
+                }
+            }
+        }
+
+        if (!hasCenter) {
+            return false;
+        }
+
         // now validate the rules
-        // 1. In a line (vertical or horizontal)
-        // we can guarantee that the tiles are sorted from left to right and top to bottom
-        // first check if it is horizontal
-        let isHorizontal = true;
-        // let word = "";
+        
+        let isValidPosition = true;
+        // validate horizontal
+        let orientation = 'horizontal';
         for (let i = 0; i < placedTiles.length - 1; i++) {
             if (placedTiles[i].row !== placedTiles[i + 1].row || placedTiles[i].col !== placedTiles[i + 1].col - 1) {
-                isHorizontal = false;
+                isValidPosition = false;
+                orientation = 'vertical';
                 break;
             }
         }
-        
-        return false;
+
+        // validate vertical
+        if (!isValidPosition) { // then check vertical
+            isValidPosition = true;
+            for (let i = 0; i < placedTiles.length - 1; i++) {
+                if (placedTiles[i].col !== placedTiles[i + 1].col || placedTiles[i].row !== placedTiles[i + 1].row - 1) {
+                    isValidPosition = false;
+                    break;
+                }
+            }
+        }
+
+        // if the tiles aren't in a valid arrangement, then give up
+        if (!isValidPosition) {
+            return false;
+        }
+
+        let isAdjacent = makesCenter;
+        if (!isAdjacent) {
+            // then check each tile and see if it is adjacent 
+            for (let i = 0; i < placedTiles.length; i++) {
+                const {row, col} = placedTiles[i];
+                // check top
+                if (row > 0 && this.board[row - 1][col].status === 'submitted') isAdjacent = true;
+                if (row < 14 && this.board[row + 1][col].status === 'submitted') isAdjacent = true;
+                if (col > 0 && this.board[row][col - 1].status === 'submitted') isAdjacent = true;
+                if (col < 14 && this.board[row][col + 1].status === 'submitted') isAdjacent = true;
+                if (isAdjacent) {
+                    break; // no need to continue testing.
+                }
+            }
+        }
+
+        if (!isAdjacent) {
+            return false;
+        }
+
+        // now determine the words that were formed.
+        let words: string[] = [];
+        if (orientation === 'vertical') {
+            let word = "";
+            let row = placedTiles[0].row - 1;
+            let col = placedTiles[0].col;
+            // collect up
+            while (row >= 0 && this.board[row][col].status === 'submitted') {
+                word = this.board[row][col].letter + word;
+                row--;
+            }
+            // collect the placed letters
+            for (let i = 0; i < placedTiles.length; i++) {
+                word += placedTiles[i].letter;
+            }
+            row = placedTiles[placedTiles.length - 1].row + 1;
+            // collect down
+            while (row <= 14 && this.board[row][col].status === 'submitted') {
+                word = this.board[row][col].letter + word;
+                row++;
+            }
+            words.push(word);
+
+            // now collect any horizontal words.
+            for (let i = 0; i < placedTiles.length; i++) {
+                word = "";
+                // collect left
+                col = placedTiles[i].col - 1;
+                row = placedTiles[i].row;
+                while (col >= 0 && this.board[row][col].status === 'submitted') {
+                    word = this.board[row][col].letter + word;
+                    col--;
+                }
+                // collect letter
+                word += placedTiles[i].letter;
+                col = placedTiles[i].col + 1;
+                // collect right
+                while (col <= 14 && this.board[row][col].status === 'submitted') {
+                    word += this.board[row][col].letter;
+                    col++;
+                }
+                if (word.length > 1)
+                    words.push(word);
+            }   
+        }
+        else {
+            let word = "";
+            let row = placedTiles[0].row;
+            let col = placedTiles[0].col - 1;
+            // collect left
+            while (col >= 0 && this.board[row][col].status === 'submitted') {
+                word = this.board[row][col].letter + word;
+                col--;
+            }
+            // collect the placed letters
+            for (let i = 0; i < placedTiles.length; i++) {
+                word += placedTiles[i].letter;
+            }
+            col = placedTiles[placedTiles.length - 1].col + 1;
+            // collect down
+            while (col <= 14 && this.board[row][col].status === 'submitted') {
+                word = this.board[row][col].letter + word;
+                col++;
+            }
+            words.push(word);
+
+            // now collect any horizontal words.
+            for (let i = 0; i < placedTiles.length; i++) {
+                word = "";
+                // collect up
+                col = placedTiles[i].col;
+                row = placedTiles[i].row - 1;
+                while (row >= 0 && this.board[row][col].status === 'submitted') {
+                    word = this.board[row][col].letter + word;
+                    row--;
+                }
+                // collect letter
+                word += placedTiles[i].letter;
+                row = placedTiles[i].row + 1;
+                // collect right
+                while (row <= 14 && this.board[row][col].status === 'submitted') {
+                    word += this.board[row][col].letter;
+                    row++;
+                }
+                if (word.length > 1)
+                    words.push(word);
+            }   
+        }
+
+        console.log(words);
+
+        if (words.length === 0) {
+            return false;
+        }
+
+        for (let i = 0; i < words.length; i++) {
+            if (!hasWord(words[i])) {
+                return false;
+            }
+        }
+
+        return true;
     }
 
     // draws a random tile from the bag and removes it from the bag

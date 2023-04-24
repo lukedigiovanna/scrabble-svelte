@@ -20,7 +20,6 @@
         return {x: 0, y: 0};
     }
 
-    $: gameBoard = (() => {return game.board})();
     $: tableInfo = getTableInfo();
 
     let tilePos: {x: number, y: number} | null;
@@ -70,7 +69,7 @@
 </style>
 
 <div bind:this={boardElement}>
-    {#each gameBoard as row, i}
+    {#each game.board as row, i}
         <div class="row">
             {#each row as a, j (i + "-" + j)}
                 <ScrabbleCell cell={a} 
@@ -107,12 +106,23 @@
 {/each}
 
 <button on:click={() => {
-    for (let i = 0; i < 15; i++) {
-        for (let j = 0; j < 15; j++) {
-            if (game.board[i][j].status === 'placed') {
-                game.board[i][j].status = 'submitted';
+    if (game.submitWord()) {
+        for (let i = 0; i < 15; i++) {
+            for (let j = 0; j < 15; j++) {
+                if (game.board[i][j].status === 'placed') {
+                    game.board[i][j].status = 'submitted';
+                }
             }
         }
+
+        const player = game.players[game.playerTurn];
+        for (let i = 0; i < player.tiles.length; i++) {
+            if (player.tiles[i] == null) {
+                player.tiles[i] = game.drawTile();
+            }
+        }
+
+        
     }
 }}>
     Submit
